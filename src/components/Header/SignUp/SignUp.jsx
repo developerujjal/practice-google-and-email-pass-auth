@@ -1,4 +1,4 @@
-import { createUserWithEmailAndPassword, getAuth, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
+import { createUserWithEmailAndPassword, getAuth, GoogleAuthProvider, sendEmailVerification, signInWithPopup, updateProfile } from "firebase/auth";
 import app from "../../firebase/firebase.init";
 import { Link } from "react-router-dom";
 import { useState } from "react";
@@ -7,6 +7,8 @@ const SignUp = () => {
     const [sucessMessage, setSucessMessage] = useState('')
     const [errorNotification, setErrorNotification] = useState('')
     const [showLoggedUser, setShowloggedUser] = useState(null)
+    const [showPassword, setShowPassword] = useState(false)
+    const [emailveri, setEmailveri] = useState('')
 
     const auth = getAuth(app)
     const googleProvider = new GoogleAuthProvider();
@@ -32,13 +34,18 @@ const SignUp = () => {
         const fullName = e.target.name.value;
         const email = e.target.email.value;
         const password = e.target.password.value;
+        const checkBox = e.target.checkbox.checked;
         console.log(fullName)
         console.log(email)
         console.log(password)
+        console.log(checkBox)
 
         const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
         const uppercaseRegex = /[A-Z]/;
         const onlyEmailRegex = /gmail/
+        setSucessMessage('')
+        setErrorNotification('')
+
         if (!email) {
             setErrorNotification('Please Type a Email Address');
             return;
@@ -51,6 +58,9 @@ const SignUp = () => {
         } else if (!onlyEmailRegex.test(email)) {
             setErrorNotification("Please Type Your Email Only");
             return;
+        } else if (!checkBox) {
+            setErrorNotification('Please accept our Terms and Condition');
+            return;
         }
 
 
@@ -59,13 +69,32 @@ const SignUp = () => {
             .then(userCredential => {
                 const user = userCredential.user;
                 console.log(user)
-                setSucessMessage('Sucessfully Logged In');
+                setSucessMessage('Sucessfully Submited!');
+                // added stuff
+                updateProfile(user, {
+                    displayName: fullName
+                })
+                .then(() => {
+                    console.log('added name')
+                })
+                .catch(eror => {
+                    console.log(eror)
+                })
+
+                
+                // send email verification
+                sendEmailVerification(user)
+                .then(()=>{
+                    setEmailveri('Email verification sent!')
+                })
             })
             .catch(error => {
                 const err = error.message;
                 console.error("error From : ", err)
+                setErrorNotification('email-already-in-use');
             })
     }
+
 
 
 
@@ -110,17 +139,26 @@ const SignUp = () => {
                             </svg>
                         </div>
                         <div className="relative flex items-center">
-                            <input type="password" required name="password" placeholder="Enter Password"
+                            <input type={showPassword ? 'text' : 'password'} required name="password" placeholder="Enter Password"
                                 className="pl-4 pr-10 py-3 bg-white text-gray-800 w-full text-sm border border-gray-300 focus:border-blue-600 outline-none rounded-lg" />
 
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg" fill="#bbb" stroke="#bbb" className="w-[18px] h-[18px] absolute right-4 cursor-pointer" viewBox="0 0 128 128">
-                                <path d="M64 104C22.127 104 1.367 67.496.504 65.943a4 4 0 0 1 0-3.887C1.367 60.504 22.127 24 64 24s62.633 36.504 63.496 38.057a4 4 0 0 1 0 3.887C126.633 67.496 105.873 104 64 104zM8.707 63.994C13.465 71.205 32.146 96 64 96c31.955 0 50.553-24.775 55.293-31.994C114.535 56.795 95.854 32 64 32 32.045 32 13.447 56.775 8.707 63.994zM64 88c-13.234 0-24-10.766-24-24s10.766-24 24-24 24 10.766 24 24-10.766 24-24 24zm0-40c-8.822 0-16 7.178-16 16s7.178 16 16 16 16-7.178 16-16-7.178-16-16-16z" data-original="#000000"></path>
-                            </svg>
+                            {
+                                showPassword ?
+                                    <svg
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        xmlns="http://www.w3.org/2000/svg" height="24px" className="w-[18px] h-[18px] absolute right-4 cursor-pointer" viewBox="0 -960 960 960" width="24px" fill="#bbb" stroke="#bbb"><path d="m644-428-58-58q9-47-27-88t-93-32l-58-58q17-8 34.5-12t37.5-4q75 0 127.5 52.5T660-500q0 20-4 37.5T644-428Zm128 126-58-56q38-29 67.5-63.5T832-500q-50-101-143.5-160.5T480-720q-29 0-57 4t-55 12l-62-62q41-17 84-25.5t90-8.5q151 0 269 83.5T920-500q-23 59-60.5 109.5T772-302Zm20 246L624-222q-35 11-70.5 16.5T480-200q-151 0-269-83.5T40-500q21-53 53-98.5t73-81.5L56-792l56-56 736 736-56 56ZM222-624q-29 26-53 57t-41 67q50 101 143.5 160.5T480-280q20 0 39-2.5t39-5.5l-36-38q-11 3-21 4.5t-21 1.5q-75 0-127.5-52.5T300-500q0-11 1.5-21t4.5-21l-84-82Zm319 93Zm-151 75Z" /></svg> :
+
+                                    <svg
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        xmlns="http://www.w3.org/2000/svg" fill="#bbb" stroke="#bbb" className="w-[18px] h-[18px] absolute right-4 cursor-pointer" viewBox="0 0 128 128">
+                                        <path d="M64 104C22.127 104 1.367 67.496.504 65.943a4 4 0 0 1 0-3.887C1.367 60.504 22.127 24 64 24s62.633 36.504 63.496 38.057a4 4 0 0 1 0 3.887C126.633 67.496 105.873 104 64 104zM8.707 63.994C13.465 71.205 32.146 96 64 96c31.955 0 50.553-24.775 55.293-31.994C114.535 56.795 95.854 32 64 32 32.045 32 13.447 56.775 8.707 63.994zM64 88c-13.234 0-24-10.766-24-24s10.766-24 24-24 24 10.766 24 24-10.766 24-24 24zm0-40c-8.822 0-16 7.178-16 16s7.178 16 16 16 16-7.178 16-16-7.178-16-16-16z" data-original="#000000"></path>
+                                    </svg>
+                            }
+
 
                         </div>
                         <div className="flex">
-                            <input type="checkbox" className="w-4" />
+                            <input type="checkbox" name="checkbox" className="w-4" />
                             <label className="text-sm ml-4 text-gray-500">I have read and accept the <a href=""
                                 className="text-sm text-blue-600 font-semibold">Terms and Conditions</a></label>
                         </div>
@@ -188,6 +226,11 @@ const SignUp = () => {
                 {
                     sucessMessage && (
                         <p className="font-bold text-green-800">{sucessMessage}</p>
+                    )
+                }
+                {
+                    emailveri && (
+                        <p className="font-bold text-green-800">{emailveri}</p>
                     )
                 }
                 {
