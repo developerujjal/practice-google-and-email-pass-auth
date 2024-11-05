@@ -1,13 +1,17 @@
-import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
+import { getAuth, sendPasswordResetEmail, signInWithEmailAndPassword } from "firebase/auth";
 import { Link } from "react-router-dom";
 import app from "../firebase/firebase.init";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 const Login = () => {
 
     const auth = getAuth(app)
     const [errorMessage, setErrorMessage] = useState('')
     const [showLoggedUser, setShowloggedUser] = useState(null)
+    const emailRef = useRef();
+    const [sucessMessage, setSucessMessage] = useState('')
+
+
 
     const handleSignIn = (e) => {
         e.preventDefault()
@@ -15,6 +19,7 @@ const Login = () => {
         const password = e.target.password.value;
 
         setErrorMessage('')
+        setSucessMessage('')
         setShowloggedUser(null)
 
         signInWithEmailAndPassword(auth, email, password)
@@ -34,6 +39,39 @@ const Login = () => {
     }
 
 
+
+
+    const handleSendRestEmail = () => {
+        
+        const emailRegex = /^\w+@[a-zA-Z_]+?\.[a-zA-Z]{2,3}$/;
+        const email = emailRef.current.value;
+
+        setErrorMessage('')
+        setSucessMessage('')
+
+        if (!email) {
+            setErrorMessage("Please Put Your Email");
+            return;
+        } else if (!emailRegex.test(email)) {
+            setErrorMessage("Please Type your Value Email!");
+            return;
+        }
+
+
+
+
+        sendPasswordResetEmail(auth, email)
+            .then(() => {
+                setSucessMessage('Password reset email sent!')
+            })
+            .catch(error => {
+                console.error(error)
+            })
+
+    }
+
+
+
     return (
         <div className="font-[sans-serif]">
             <div className="min-h-screen flex fle-col items-center justify-center py-6 px-4">
@@ -50,7 +88,7 @@ const Login = () => {
                             <div>
                                 <label className="text-gray-800 text-sm mb-2 block">Email Address</label>
                                 <div className="relative flex items-center">
-                                    <input name="email" type="email" required className="w-full text-sm text-gray-800 border border-gray-300 px-4 py-3 rounded-lg outline-blue-600" placeholder="Enter Email" />
+                                    <input name="email" type="email" ref={emailRef} required className="w-full text-sm text-gray-800 border border-gray-300 px-4 py-3 rounded-lg outline-blue-600" placeholder="Enter Email" />
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="#bbb" stroke="#bbb" className="w-[18px] h-[18px] absolute right-4" viewBox="0 0 24 24">
                                         <circle cx="10" cy="7" r="6" data-original="#000000"></circle>
                                         <path d="M14 15H6a5 5 0 0 0-5 5 3 3 0 0 0 3 3h12a3 3 0 0 0 3-3 5 5 0 0 0-5-5zm8-4h-2.59l.3-.29a1 1 0 0 0-1.42-1.42l-2 2a1 1 0 0 0 0 1.42l2 2a1 1 0 0 0 1.42 0 1 1 0 0 0 0-1.42l-.3-.29H22a1 1 0 0 0 0-2z" data-original="#000000"></path>
@@ -76,9 +114,11 @@ const Login = () => {
                                 </div>
 
                                 <div className="text-sm">
-                                    <a className="text-blue-600 hover:underline font-semibold">
+                                    <span
+                                        onClick={handleSendRestEmail}
+                                        className="text-blue-600 hover:underline cursor-pointer font-semibold">
                                         Forgot your password?
-                                    </a>
+                                    </span>
                                 </div>
                             </div>
 
@@ -98,6 +138,11 @@ const Login = () => {
                         {
                             errorMessage && (
                                 <p className="font-bold text-red-700">{errorMessage}</p>
+                            )
+                        }
+                        {
+                            sucessMessage && (
+                                <p className="font-bold text-green-700">{sucessMessage}</p>
                             )
                         }
 
